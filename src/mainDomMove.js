@@ -7,6 +7,26 @@ const toPhysY = (y) => -(y - window.innerHeight / 2) / SCALE;
 const toPixX = (x) => x * SCALE + window.innerWidth / 2;
 const toPixY = (y) => -y * SCALE + window.innerHeight / 2;
 
+// 物体のどこを掴んでもOKなようにするための座標保存用配列
+const offsets = [
+	{ x: 0, y: 0 }, // body
+	{ x: 0, y: 0 }, // body2
+	{ x: 0, y: 0 }, // body3
+	{ x: 0, y: 0 }, // body4
+];
+
+function setGrab(body, index, e) {
+	const pos = body.translation();
+
+	const mouseX = toPhysX(e.clientX);
+	const mouseY = toPhysY(e.clientY);
+
+	offsets[index] = {
+		x: pos.x - mouseX,
+		y: pos.y - mouseY,
+	};
+}
+
 // SVGパスをサンプリングして頂点配列を生成
 function pathToVertices(pathEl, minStep = 6, maxPoints = 60) {
 	const total = pathEl.getTotalLength();
@@ -154,21 +174,29 @@ function clean(pts) {
 	let dragging3 = false;
 	let dragging4 = false;
 	// --- マウス ---
+	// setGrabで掴んだ位置と物体の中心の差分を保存
 	box.addEventListener("mousedown", (e) => {
 		dragging = true;
 		body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+		setGrab(body, 0, e);
 	});
+
 	box2.addEventListener("mousedown", (e) => {
 		dragging2 = true;
 		body2.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+		setGrab(body2, 1, e);
 	});
+
 	stone1.addEventListener("mousedown", (e) => {
 		dragging3 = true;
 		body3.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+		setGrab(body3, 2, e);
 	});
+
 	stone2.addEventListener("mousedown", (e) => {
 		dragging4 = true;
 		body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+		setGrab(body4, 3, e);
 	});
 
 	// --- タッチ ---
@@ -222,9 +250,10 @@ function clean(pts) {
 			const h = rects[i].height;
 			const x = clamp(e.clientX, w / 2, window.innerWidth - w / 2);
 			const y = clamp(e.clientY, h / 2, window.innerHeight - h / 2);
+			// 掴んだ位置を保存しておいたので、その分足す
 			bodies[i].setNextKinematicTranslation({
-				x: toPhysX(x),
-				y: toPhysY(y),
+				x: toPhysX(x) + offsets[i].x,
+				y: toPhysY(y) + offsets[i].y,
 			});
 		}
 	});
