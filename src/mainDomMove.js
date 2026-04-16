@@ -124,16 +124,19 @@ function clean(pts) {
 	}
 	// ===== 床 =====
 	const floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
-	world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
+	const floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
+	floorCollider.setRestitution(0.0);
+
 	// ===== 左右の壁 =====
 	const wallThickness = 0.2; // 薄い壁
 
 	const leftWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-worldWidth / 2 - wallThickness, 0));
-	world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), leftWall);
+	const leftWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), leftWall);
+	leftWallCollider.setRestitution(0.0);
 
-	// 右壁
 	const rightWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(worldWidth / 2 + wallThickness, 0));
-	world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), rightWall);
+	const rightWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), rightWall);
+	rightWallCollider.setRestitution(0.0);
 
 	// ===== ドラッグ =====
 	let dragging = false;
