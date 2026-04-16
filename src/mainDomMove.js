@@ -86,7 +86,7 @@ function clean(pts) {
 		wasmUrl: "/rapier_wasm2d_bg.wasm",
 	});
 	// gravity = 物体がどれだけ速く下に加速するかを決める値
-	const gravity = { x: 0.0, y: -25 };
+	const gravity = { x: 0.0, y: -35 };
 	const world = new RAPIER.World(gravity);
 
 	// 物体の減り込みを減らすために、ソルバーの反復回数を増やす
@@ -375,9 +375,11 @@ function clean(pts) {
 			if (v.y > 0) {
 				b.setLinvel({ x: v.x, y: 0 }, true);
 			}
+			// 横方向を減衰（0.2倍）
+			const vx = v.x * 0.2;
 
-			// 回転も止めると安定
-			// b.setAngvel(0, true);
+			// 回転減衰（0.2倍）
+			b.setAngvel(b.angvel() * 0.2, true);
 		}
 
 		for (let i = 0; i < bodies.length; i++) {
