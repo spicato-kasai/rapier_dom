@@ -64,6 +64,8 @@ function clean(pts) {
 	world.integrationParameters.numAdditionalFrictionIterations = 15;
 	// めりこみ許容量
 	world.integrationParameters.allowedLinearError = 0.0001;
+	// 衝突を減らすために柔らかくする
+	world.integrationParameters.erp = 0.6;
 
 	// ===== 初期位置 =====
 	const rect = box.getBoundingClientRect();
@@ -96,13 +98,15 @@ function clean(pts) {
 	const verts4 = rawVerts2.map(([x, y]) => [((x - vb2.x - vb2.width / 2) * scaleX4) / SCALE, -(((y - vb2.y - vb2.height / 2) * scaleY4) / SCALE)]);
 
 	// ===== 剛体 =====
-	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(2).setAngularDamping(2));
+	const linearDamping = 3;
+	const angularDamping = 3;
+	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
 
-	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(2).setAngularDamping(2));
+	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
 
-	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(2).setAngularDamping(2));
+	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
 
-	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(2).setAngularDamping(2));
+	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
 
 	// ===== コライダー =====
 	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body).setRestitution(0);
@@ -114,7 +118,7 @@ function clean(pts) {
 	const hull = RAPIER.ColliderDesc.convexHull(new Float32Array(flat));
 
 	if (hull) {
-		hull.setDensity(1);
+		hull.setDensity(3);
 		world.createCollider(hull, body3).setRestitution(0);
 	}
 
@@ -125,7 +129,7 @@ function clean(pts) {
 	const hull2 = RAPIER.ColliderDesc.convexHull(new Float32Array(flat2));
 
 	if (hull2) {
-		hull2.setDensity(1);
+		hull2.setDensity(3);
 		world.createCollider(hull2, body4).setRestitution(0.0);
 	}
 	// ===== 床 =====
@@ -259,33 +263,34 @@ function clean(pts) {
 			dragging = false;
 			body.setLinvel({ x: 0, y: 0 }, true);
 			body.setAngvel(0, true);
-			requestAnimationFrame(() => {
+
+			setTimeout(() => {
 				body.setBodyType(RAPIER.RigidBodyType.Dynamic);
-			});
+			}, 16);
 		}
 		if (dragging2) {
 			dragging2 = false;
 			body2.setLinvel({ x: 0, y: 0 }, true);
 			body2.setAngvel(0, true);
-			requestAnimationFrame(() => {
+			setTimeout(() => {
 				body2.setBodyType(RAPIER.RigidBodyType.Dynamic);
-			});
+			}, 16);
 		}
 		if (dragging3) {
 			dragging3 = false;
 			body3.setLinvel({ x: 0, y: 0 }, true);
 			body3.setAngvel(0, true);
-			requestAnimationFrame(() => {
+			setTimeout(() => {
 				body3.setBodyType(RAPIER.RigidBodyType.Dynamic);
-			});
+			}, 16);
 		}
 		if (dragging4) {
 			dragging4 = false;
 			body4.setLinvel({ x: 0, y: 0 }, true);
 			body4.setAngvel(0, true);
-			requestAnimationFrame(() => {
+			setTimeout(() => {
 				body4.setBodyType(RAPIER.RigidBodyType.Dynamic);
-			});
+			}, 16);
 		}
 	}
 
