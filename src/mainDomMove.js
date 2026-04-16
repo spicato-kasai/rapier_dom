@@ -99,8 +99,8 @@ function clean(pts) {
 	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(8).setAngularDamping(8));
 
 	// ===== コライダー =====
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body).setRestitution(0.0);
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rect2.width / 2 / SCALE, rect2.height / 2 / SCALE), body2).setRestitution(0.0);
+	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body).setRestitution(0);
+	world.createCollider(RAPIER.ColliderDesc.cuboid(rect2.width / 2 / SCALE, rect2.height / 2 / SCALE), body2).setRestitution(0);
 	// stone1
 	const cleaned = clean(verts);
 	const flat = cleaned.flat();
@@ -109,7 +109,7 @@ function clean(pts) {
 
 	if (hull) {
 		hull.setDensity(1);
-		world.createCollider(hull, body3).setRestitution(0.0);
+		world.createCollider(hull, body3).setRestitution(0);
 	}
 
 	// stone2
