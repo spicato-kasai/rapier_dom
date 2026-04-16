@@ -246,9 +246,16 @@ async function initWorld() {
 	);
 
 	// ===== リサイズ対応 =====
-	window.addEventListener("resize", async () => {
-		// 物理ワールド再構築
-		await initWorld();
+	let resizeTimer;
+	window.addEventListener("resize", () => {
+		clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(() => {
+			if (!window.matchMedia("(pointer: coarse)").matches) {
+				location.reload();
+			} else {
+				initWorld();
+			}
+		}, 200);
 	});
 
 	// ===== ループ =====
