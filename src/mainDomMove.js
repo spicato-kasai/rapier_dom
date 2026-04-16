@@ -90,14 +90,17 @@ function clean(pts) {
 	const verts4 = rawVerts2.map(([x, y]) => [((x - vb2.x - vb2.width / 2) * scaleX4) / SCALE, -(((y - vb2.y - vb2.height / 2) * scaleY4) / SCALE)]);
 
 	// ===== 剛体 =====
-	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(5).setAngularDamping(5).setCcdEnabled(true));
-	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(5).setAngularDamping(5).setCcdEnabled(true));
-	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(5).setAngularDamping(5).setCcdEnabled(true));
-	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(5).setAngularDamping(5).setCcdEnabled(true));
+	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(8).setAngularDamping(8));
+
+	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(8).setAngularDamping(8));
+
+	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(8).setAngularDamping(8));
+
+	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(8).setAngularDamping(8));
 
 	// ===== コライダー =====
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body);
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rect2.width / 2 / SCALE, rect2.height / 2 / SCALE), body2);
+	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body).setRestitution(0.0);
+	world.createCollider(RAPIER.ColliderDesc.cuboid(rect2.width / 2 / SCALE, rect2.height / 2 / SCALE), body2).setRestitution(0.0);
 	// stone1
 	const cleaned = clean(verts);
 	const flat = cleaned.flat();
@@ -106,7 +109,7 @@ function clean(pts) {
 
 	if (hull) {
 		hull.setDensity(1);
-		world.createCollider(hull, body3);
+		world.createCollider(hull, body3).setRestitution(0.0);
 	}
 
 	// stone2
@@ -117,7 +120,7 @@ function clean(pts) {
 
 	if (hull2) {
 		hull2.setDensity(1);
-		world.createCollider(hull2, body4);
+		world.createCollider(hull2, body4).setRestitution(0.0);
 	}
 	// ===== 床 =====
 	const floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
@@ -179,18 +182,26 @@ function clean(pts) {
 
 		if (dragging) {
 			dragging = false;
+			body.setLinvel({ x: 0, y: 0 }, true);
+			body.setAngvel(0, true);
 			body.setBodyType(RAPIER.RigidBodyType.Dynamic);
 		}
 		if (dragging2) {
 			dragging2 = false;
+			body2.setLinvel({ x: 0, y: 0 }, true);
+			body2.setAngvel(0, true);
 			body2.setBodyType(RAPIER.RigidBodyType.Dynamic);
 		}
 		if (dragging3) {
 			dragging3 = false;
+			body3.setLinvel({ x: 0, y: 0 }, true);
+			body3.setAngvel(0, true);
 			body3.setBodyType(RAPIER.RigidBodyType.Dynamic);
 		}
 		if (dragging4) {
 			dragging4 = false;
+			body4.setLinvel({ x: 0, y: 0 }, true);
+			body4.setAngvel(0, true);
 			body4.setBodyType(RAPIER.RigidBodyType.Dynamic);
 		}
 	});
@@ -235,8 +246,7 @@ function clean(pts) {
 			if (fixed) {
 				bodies[i].setLinvel({ x: 0, y: 0 }, true);
 				bodies[i].setAngvel(0, true);
-				bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
-				bodies[i].setNextKinematicTranslation({ x, y });
+				bodies[i].setTranslation({ x, y }, true);
 			}
 		}
 
