@@ -157,28 +157,42 @@ function clean(pts) {
 		if (!dragging && !dragging2 && !dragging3 && !dragging4) return;
 
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val)); // 画面外に出ないようにクランプ
-		const x = clamp(e.clientX, 0, window.innerWidth);
-		const y = clamp(e.clientY, 0, window.innerHeight);
 
+		// 各オブジェクトのサイズ取得
+		const boxRect = box.getBoundingClientRect();
+		const box2Rect = box2.getBoundingClientRect();
+		const stone1Rect = stone1.getBoundingClientRect();
+		const stone2Rect = stone2.getBoundingClientRect();
+
+		// それぞれの中心が画面端で止まるようにclamp範囲を調整
+		let x, y;
 		if (dragging) {
+			x = clamp(e.clientX, boxRect.width / 2, window.innerWidth - boxRect.width / 2);
+			y = clamp(e.clientY, boxRect.height / 2, window.innerHeight - boxRect.height / 2);
 			body.setNextKinematicTranslation({
 				x: toPhysX(x),
 				y: toPhysY(y),
 			});
 		}
 		if (dragging2) {
+			x = clamp(e.clientX, box2Rect.width / 2, window.innerWidth - box2Rect.width / 2);
+			y = clamp(e.clientY, box2Rect.height / 2, window.innerHeight - box2Rect.height / 2);
 			body2.setNextKinematicTranslation({
 				x: toPhysX(x),
 				y: toPhysY(y),
 			});
 		}
 		if (dragging3) {
+			x = clamp(e.clientX, stone1Rect.width / 2, window.innerWidth - stone1Rect.width / 2);
+			y = clamp(e.clientY, stone1Rect.height / 2, window.innerHeight - stone1Rect.height / 2);
 			body3.setNextKinematicTranslation({
 				x: toPhysX(x),
 				y: toPhysY(y),
 			});
 		}
 		if (dragging4) {
+			x = clamp(e.clientX, stone2Rect.width / 2, window.innerWidth - stone2Rect.width / 2);
+			y = clamp(e.clientY, stone2Rect.height / 2, window.innerHeight - stone2Rect.height / 2);
 			body4.setNextKinematicTranslation({
 				x: toPhysX(x),
 				y: toPhysY(y),
