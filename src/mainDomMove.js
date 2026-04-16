@@ -224,6 +224,53 @@ function clean(pts) {
 	// ===== ループ =====
 	function loop() {
 		world.step();
+		// 床のY座標（例: 0）より下に行ったら物理演算を停止
+		const floorY = toPhysY(window.innerHeight); // 物理ワールドの床のY座標に合わせて調整
+
+		// box
+		if (body.translation().y < floorY) {
+			body.setLinvel({ x: 0, y: 0 }, true);
+			body.setAngvel(0, true);
+			body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+
+			// DOMの位置も床の位置で固定
+			const domX = body.translation().x;
+			const domY = floorY;
+			body.setNextKinematicTranslation({ x: domX, y: domY });
+		}
+		// box2
+		if (body2.translation().y < floorY) {
+			body2.setLinvel({ x: 0, y: 0 }, true);
+			body2.setAngvel(0, true);
+			body2.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+
+			const domX = body2.translation().x;
+			const domY = floorY;
+			body2.setNextKinematicTranslation({ x: domX, y: domY });
+		}
+
+		// stone1
+		if (body3.translation().y < floorY) {
+			body3.setLinvel({ x: 0, y: 0 }, true);
+			body3.setAngvel(0, true);
+			body3.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+
+			const domX = body3.translation().x;
+			const domY = floorY;
+			body3.setNextKinematicTranslation({ x: domX, y: domY });
+		}
+		// stone2
+		if (body4.translation().y < floorY) {
+			body4.setLinvel({ x: 0, y: 0 }, true);
+			body4.setAngvel(0, true);
+			body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+
+			const domX = body4.translation().x;
+			const domY = floorY;
+			body4.setNextKinematicTranslation({ x: domX, y: domY });
+		}
+		// 停止ここまで
+
 		// 上昇中は少し加速させるここで重力を調整
 		if (body.linvel().y < 0) {
 			body.setGravityScale(1.5, true);
