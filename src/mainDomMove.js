@@ -1,5 +1,5 @@
 import RAPIER from "@dimforge/rapier2d-compat";
-const SCALE = 220;
+const SCALE = 80;
 const worldWidth = window.innerWidth / SCALE;
 const worldHeight = window.innerHeight / SCALE;
 const toPhysX = (x) => (x - window.innerWidth / 2) / SCALE;
@@ -56,10 +56,14 @@ function clean(pts) {
 		wasmUrl: "/rapier_wasm2d_bg.wasm",
 	});
 	// gravity = 物体がどれだけ速く下に加速するかを決める値
-	const gravity = { x: 0.0, y: -10 };
+	const gravity = { x: 0.0, y: -25 };
 	const world = new RAPIER.World(gravity);
-	world.integrationParameters.numSolverIterations = 30;
-	world.integrationParameters.numAdditionalFrictionIterations = 12;
+
+	// 物体の減り込みを減らすために、ソルバーの反復回数を増やす
+	world.integrationParameters.numSolverIterations = 40;
+	world.integrationParameters.numAdditionalFrictionIterations = 15;
+	// めりこみ許容量
+	world.integrationParameters.allowedLinearError = 0.0001;
 
 	// ===== 初期位置 =====
 	const rect = box.getBoundingClientRect();
@@ -92,13 +96,13 @@ function clean(pts) {
 	const verts4 = rawVerts2.map(([x, y]) => [((x - vb2.x - vb2.width / 2) * scaleX4) / SCALE, -(((y - vb2.y - vb2.height / 2) * scaleY4) / SCALE)]);
 
 	// ===== 剛体 =====
-	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(12).setAngularDamping(12));
+	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(2).setAngularDamping(2));
 
-	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(12).setAngularDamping(12));
+	const body2 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx2), toPhysY(cy2)).setLinearDamping(2).setAngularDamping(2));
 
-	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(12).setAngularDamping(12));
+	const body3 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx3), toPhysY(cy3)).setLinearDamping(2).setAngularDamping(2));
 
-	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(12).setAngularDamping(12));
+	const body4 = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx4), toPhysY(cy4)).setLinearDamping(2).setAngularDamping(2));
 
 	// ===== コライダー =====
 	world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body).setRestitution(0);
