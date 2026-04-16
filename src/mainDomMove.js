@@ -96,7 +96,7 @@ async function initWorld() {
 	});
 
 	// 物理ワールド
-	const gravity = { x: 0.0, y: -80 };
+	const gravity = { x: 0.0, y: -50 };
 	world = new RAPIER.World(gravity);
 	world.integrationParameters.numSolverIterations = 8;
 	world.integrationParameters.numAdditionalFrictionIterations = 15;
@@ -269,7 +269,7 @@ async function initWorld() {
 		for (let i = 0; i < bodies.length; i++) {
 			const b = bodies[i];
 			const v = b.linvel();
-			const vy = v.y > 0 ? 0 : v.y;
+			const vy = v.y > 0 ? v.y * 0.1 : v.y;
 			const vx = v.x * 0.2;
 			b.setLinvel({ x: vx, y: vy }, true);
 			b.setAngvel(b.angvel() * 0.2, true);
