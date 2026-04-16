@@ -1,0 +1,112 @@
+:root {
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	height: 100vh;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	background: #fff;
+	color: #f1f1f1;
+}
+
+.layout {
+	width: 100%;
+	height: 100%;
+	position: relative;
+}
+
+#webgl-layer {
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 1;
+}
+
+#webgl-layer canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.image1 {
+	position: absolute;
+	z-index: 0;
+	top: 9.92vw;
+	left: 13.227vw;
+	width: 33.07vw;
+	height: 22.05vw;
+	/* opacity: 0; */
+}
+
+img {
+	width: 100%;
+	height: 100%;
+}
+.image2 {
+	position: absolute;
+	z-index: 0;
+	top: calc(10vh + 15vw);
+	left: 13.227vw;
+	width: 33.07vw;
+	height: 22.05vw;
+	/* opacity: 0; */
+}
+.svg-image1 {
+	position: absolute;
+	z-index: 0;
+	top: 19.92vw;
+	left: 13.227vw;
+	width: 18.07vw;
+	height: 16.34vw;
+}
+.svg-image1 svg {
+	width: 100%;
+	height: 100%;
+}
+.floor {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 20px;
+	background: black;
+	z-index: 10;
+}
+#box {
+	position: absolute;
+	width: 120px;
+	height: 120px;
+	background: #3498db;
+	transform-origin: center center;
+	will-change: transform;
+}
+#box2 {
+	position: absolute;
+	width: 120px;
+	height: 120px;
+	background: #e74c3c;
+	transform-origin: center center;
+	will-change: transform;
+}
+.stone1 {
+	position: absolute;
+	width: 272px;
+	height: 247px;
+	transform-origin: center center;
+	will-change: transform;
+}
+.stone2 {
+	position: absolute;
+	width: 272px;
+	height: 247px;
+	transform-origin: center center;
+	will-change: transform;
+}
