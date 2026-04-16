@@ -27,6 +27,16 @@ function setGrab(body, index, e) {
 	};
 }
 
+// 物体が飛びすぎないように速度と距離を制限する関数
+function clampMagnitude(vec, max) {
+	const mag = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+	if (mag > max) {
+		const scale = max / mag;
+		return { x: vec.x * scale, y: vec.y * scale };
+	}
+	return vec;
+}
+
 // SVGパスをサンプリングして頂点配列を生成
 function pathToVertices(pathEl, minStep = 6, maxPoints = 60) {
 	const total = pathEl.getTotalLength();
@@ -80,7 +90,7 @@ function clean(pts) {
 	const world = new RAPIER.World(gravity);
 
 	// 物体の減り込みを減らすために、ソルバーの反復回数を増やす
-	world.integrationParameters.numSolverIterations = 40;
+	world.integrationParameters.numSolverIterations = 8;
 	world.integrationParameters.numAdditionalFrictionIterations = 15;
 	// めりこみ許容量
 	world.integrationParameters.allowedLinearError = 0.0001;
@@ -118,7 +128,7 @@ function clean(pts) {
 	const verts4 = rawVerts2.map(([x, y]) => [((x - vb2.x - vb2.width / 2) * scaleX4) / SCALE, -(((y - vb2.y - vb2.height / 2) * scaleY4) / SCALE)]);
 
 	// ===== 剛体 =====
-	const linearDamping = 3;
+	const linearDamping = 4;
 	const angularDamping = 3;
 	const body = world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(cx), toPhysY(cy)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
 
@@ -288,10 +298,15 @@ function clean(pts) {
 	function endDrag() {
 		if (!dragging && !dragging2 && !dragging3 && !dragging4) return;
 
+		const MAX_LINVEL = 1; // 最大速度（必要に応じて調整）
+		const MAX_ANGVEL = 5; // 最大角速度
+
 		if (dragging) {
 			dragging = false;
-			body.setLinvel({ x: 0, y: 0 }, true);
-			body.setAngvel(0, true);
+			let linvel = clampMagnitude(body.linvel(), MAX_LINVEL);
+			let angvel = Math.max(Math.min(body.angvel(), MAX_ANGVEL), -MAX_ANGVEL);
+			body.setLinvel(linvel, true);
+			body.setAngvel(angvel, true);
 
 			setTimeout(() => {
 				body.setBodyType(RAPIER.RigidBodyType.Dynamic);
@@ -299,24 +314,30 @@ function clean(pts) {
 		}
 		if (dragging2) {
 			dragging2 = false;
-			body2.setLinvel({ x: 0, y: 0 }, true);
-			body2.setAngvel(0, true);
+			let linvel = clampMagnitude(body2.linvel(), MAX_LINVEL);
+			let angvel = Math.max(Math.min(body2.angvel(), MAX_ANGVEL), -MAX_ANGVEL);
+			body2.setLinvel(linvel, true);
+			body2.setAngvel(angvel, true);
 			setTimeout(() => {
 				body2.setBodyType(RAPIER.RigidBodyType.Dynamic);
 			}, 16);
 		}
 		if (dragging3) {
 			dragging3 = false;
-			body3.setLinvel({ x: 0, y: 0 }, true);
-			body3.setAngvel(0, true);
+			let linvel = clampMagnitude(body3.linvel(), MAX_LINVEL);
+			let angvel = Math.max(Math.min(body3.angvel(), MAX_ANGVEL), -MAX_ANGVEL);
+			body3.setLinvel(linvel, true);
+			body3.setAngvel(angvel, true);
 			setTimeout(() => {
 				body3.setBodyType(RAPIER.RigidBodyType.Dynamic);
 			}, 16);
 		}
 		if (dragging4) {
 			dragging4 = false;
-			body4.setLinvel({ x: 0, y: 0 }, true);
-			body4.setAngvel(0, true);
+			let linvel = clampMagnitude(body4.linvel(), MAX_LINVEL);
+			let angvel = Math.max(Math.min(body4.angvel(), MAX_ANGVEL), -MAX_ANGVEL);
+			body4.setLinvel(linvel, true);
+			body4.setAngvel(angvel, true);
 			setTimeout(() => {
 				body4.setBodyType(RAPIER.RigidBodyType.Dynamic);
 			}, 16);
@@ -345,6 +366,19 @@ function clean(pts) {
 		const bodies = [body, body2, body3, body4];
 		const rects = [rect, rect2, rect3, rect4];
 		const doms = [box, box2, stone1, stone2];
+
+		// ★ 上方向だけ殺す
+		for (let i = 0; i < bodies.length; i++) {
+			const b = bodies[i];
+			const v = b.linvel();
+
+			if (v.y > 0) {
+				b.setLinvel({ x: v.x, y: 0 }, true);
+			}
+
+			// 回転も止めると安定
+			// b.setAngvel(0, true);
+		}
 
 		for (let i = 0; i < bodies.length; i++) {
 			let pos = bodies[i].translation();
@@ -383,6 +417,7 @@ function clean(pts) {
 			const angle = bodies[i].rotation();
 			const x = toPixX(pos.x);
 			const y = toPixY(pos.y);
+
 			doms[i].style.transform = `translate(${x - rects[i].width / 2}px, ${y - rects[i].height / 2}px) rotate(${-angle}rad)`;
 		}
 
