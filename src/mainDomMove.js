@@ -56,7 +56,7 @@ function clean(pts) {
 		wasmUrl: "/rapier_wasm2d_bg.wasm",
 	});
 
-	const gravity = { x: 0.0, y: -20 };
+	const gravity = { x: 0.0, y: -10 };
 	const world = new RAPIER.World(gravity);
 	world.integrationParameters.numSolverIterations = 30;
 	world.integrationParameters.numAdditionalFrictionIterations = 12;
