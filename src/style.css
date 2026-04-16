@@ -90,10 +90,3 @@ img {
 	transform-origin: center center;
 	will-change: transform;
 }
-@media (max-width: 960px) {
-	.stone1,
-	.stone2 {
-		width: 9vw;
-		height: 8vw;
-	}
-}
