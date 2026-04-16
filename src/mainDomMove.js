@@ -55,7 +55,7 @@ function clean(pts) {
 		noDefaultInstance: false,
 		wasmUrl: "/rapier_wasm2d_bg.wasm",
 	});
-
+	// gravity = 物体がどれだけ速く下に加速するかを決める値
 	const gravity = { x: 0.0, y: -10 };
 	const world = new RAPIER.World(gravity);
 	world.integrationParameters.numSolverIterations = 30;
@@ -145,6 +145,7 @@ function clean(pts) {
 	let dragging2 = false;
 	let dragging3 = false;
 	let dragging4 = false;
+	// --- マウス ---
 	box.addEventListener("mousedown", (e) => {
 		dragging = true;
 		body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
@@ -161,6 +162,44 @@ function clean(pts) {
 		dragging4 = true;
 		body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
 	});
+
+	// --- タッチ ---
+	box.addEventListener(
+		"touchstart",
+		(e) => {
+			dragging = true;
+			body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	box2.addEventListener(
+		"touchstart",
+		(e) => {
+			dragging2 = true;
+			body2.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	stone1.addEventListener(
+		"touchstart",
+		(e) => {
+			dragging3 = true;
+			body3.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+	stone2.addEventListener(
+		"touchstart",
+		(e) => {
+			dragging4 = true;
+			body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -182,14 +221,40 @@ function clean(pts) {
 		}
 	});
 
-	window.addEventListener("mouseup", () => {
+	window.addEventListener(
+		"touchmove",
+		(e) => {
+			const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+			if (e.touches.length === 0) return;
+			const touch = e.touches[0];
+
+			const bodies = [body, body2, body3, body4];
+			const rects = [box.getBoundingClientRect(), box2.getBoundingClientRect(), stone1.getBoundingClientRect(), stone2.getBoundingClientRect()];
+			const drags = [dragging, dragging2, dragging3, dragging4];
+
+			for (let i = 0; i < bodies.length; i++) {
+				if (!drags[i]) continue;
+				const w = rects[i].width;
+				const h = rects[i].height;
+				const x = clamp(touch.clientX, w / 2, window.innerWidth - w / 2);
+				const y = clamp(touch.clientY, h / 2, window.innerHeight - h / 2);
+				bodies[i].setNextKinematicTranslation({
+					x: toPhysX(x),
+					y: toPhysY(y),
+				});
+			}
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
+
+	function endDrag() {
 		if (!dragging && !dragging2 && !dragging3 && !dragging4) return;
 
 		if (dragging) {
 			dragging = false;
 			body.setLinvel({ x: 0, y: 0 }, true);
 			body.setAngvel(0, true);
-
 			requestAnimationFrame(() => {
 				body.setBodyType(RAPIER.RigidBodyType.Dynamic);
 			});
@@ -218,7 +283,17 @@ function clean(pts) {
 				body4.setBodyType(RAPIER.RigidBodyType.Dynamic);
 			});
 		}
-	});
+	}
+
+	window.addEventListener("mouseup", endDrag);
+	window.addEventListener(
+		"touchend",
+		(e) => {
+			endDrag();
+			e.preventDefault();
+		},
+		{ passive: false },
+	);
 
 	// ===== ループ =====
 	function loop() {
