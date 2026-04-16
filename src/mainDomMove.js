@@ -153,47 +153,21 @@ function clean(pts) {
 		dragging4 = true;
 		body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
 	});
+
 	window.addEventListener("mousemove", (e) => {
-		if (!dragging && !dragging2 && !dragging3 && !dragging4) return;
+		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
-		const clamp = (val, min, max) => Math.max(min, Math.min(max, val)); // 画面外に出ないようにクランプ
+		const bodies = [body, body2, body3, body4];
+		const rects = [box.getBoundingClientRect(), box2.getBoundingClientRect(), stone1.getBoundingClientRect(), stone2.getBoundingClientRect()];
+		const drags = [dragging, dragging2, dragging3, dragging4];
 
-		// 各オブジェクトのサイズ取得
-		const boxRect = box.getBoundingClientRect();
-		const box2Rect = box2.getBoundingClientRect();
-		const stone1Rect = stone1.getBoundingClientRect();
-		const stone2Rect = stone2.getBoundingClientRect();
-
-		// それぞれの中心が画面端で止まるようにclamp範囲を調整
-		let x, y;
-		if (dragging) {
-			x = clamp(e.clientX, boxRect.width / 2, window.innerWidth - boxRect.width / 2);
-			y = clamp(e.clientY, boxRect.height / 2, window.innerHeight - boxRect.height / 2);
-			body.setNextKinematicTranslation({
-				x: toPhysX(x),
-				y: toPhysY(y),
-			});
-		}
-		if (dragging2) {
-			x = clamp(e.clientX, box2Rect.width / 2, window.innerWidth - box2Rect.width / 2);
-			y = clamp(e.clientY, box2Rect.height / 2, window.innerHeight - box2Rect.height / 2);
-			body2.setNextKinematicTranslation({
-				x: toPhysX(x),
-				y: toPhysY(y),
-			});
-		}
-		if (dragging3) {
-			x = clamp(e.clientX, stone1Rect.width / 2, window.innerWidth - stone1Rect.width / 2);
-			y = clamp(e.clientY, stone1Rect.height / 2, window.innerHeight - stone1Rect.height / 2);
-			body3.setNextKinematicTranslation({
-				x: toPhysX(x),
-				y: toPhysY(y),
-			});
-		}
-		if (dragging4) {
-			x = clamp(e.clientX, stone2Rect.width / 2, window.innerWidth - stone2Rect.width / 2);
-			y = clamp(e.clientY, stone2Rect.height / 2, window.innerHeight - stone2Rect.height / 2);
-			body4.setNextKinematicTranslation({
+		for (let i = 0; i < bodies.length; i++) {
+			if (!drags[i]) continue;
+			const w = rects[i].width;
+			const h = rects[i].height;
+			const x = clamp(e.clientX, w / 2, window.innerWidth - w / 2);
+			const y = clamp(e.clientY, h / 2, window.innerHeight - h / 2);
+			bodies[i].setNextKinematicTranslation({
 				x: toPhysX(x),
 				y: toPhysY(y),
 			});
@@ -224,87 +198,56 @@ function clean(pts) {
 	// ===== ループ =====
 	function loop() {
 		world.step();
-		// 床のY座標（例: 0）より下に行ったら物理演算を停止
-		const floorY = toPhysY(window.innerHeight); // 物理ワールドの床のY座標に合わせて調整
 
-		// box
-		if (body.translation().y < floorY) {
-			body.setLinvel({ x: 0, y: 0 }, true);
-			body.setAngvel(0, true);
-			body.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+		const minX = toPhysX(0);
+		const maxX = toPhysX(window.innerWidth);
+		const minY = toPhysY(window.innerHeight); // 画面下端
+		const maxY = toPhysY(0); // 画面上端
 
-			// DOMの位置も床の位置で固定
-			const domX = body.translation().x;
-			const domY = floorY;
-			body.setNextKinematicTranslation({ x: domX, y: domY });
+		const bodies = [body, body2, body3, body4];
+		const rects = [rect, rect2, rect3, rect4];
+		const doms = [box, box2, stone1, stone2];
+
+		for (let i = 0; i < bodies.length; i++) {
+			let pos = bodies[i].translation();
+			let fixed = false;
+			let x = pos.x;
+			let y = pos.y;
+
+			if (x < minX) {
+				x = minX;
+				fixed = true;
+			}
+			if (x > maxX) {
+				x = maxX;
+				fixed = true;
+			}
+			if (y < minY) {
+				y = minY;
+				fixed = true;
+			}
+			// 画面上端は反射させない
+			// if (y > maxY) {
+			// 	y = maxY;
+			// 	fixed = true;
+			// }
+
+			if (fixed) {
+				bodies[i].setLinvel({ x: 0, y: 0 }, true);
+				bodies[i].setAngvel(0, true);
+				bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+				bodies[i].setNextKinematicTranslation({ x, y });
+			}
 		}
-		// box2
-		if (body2.translation().y < floorY) {
-			body2.setLinvel({ x: 0, y: 0 }, true);
-			body2.setAngvel(0, true);
-			body2.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
 
-			const domX = body2.translation().x;
-			const domY = floorY;
-			body2.setNextKinematicTranslation({ x: domX, y: domY });
+		// 描画更新
+		for (let i = 0; i < bodies.length; i++) {
+			const pos = bodies[i].translation();
+			const angle = bodies[i].rotation();
+			const x = toPixX(pos.x);
+			const y = toPixY(pos.y);
+			doms[i].style.transform = `translate(${x - rects[i].width / 2}px, ${y - rects[i].height / 2}px) rotate(${-angle}rad)`;
 		}
-
-		// stone1
-		if (body3.translation().y < floorY) {
-			body3.setLinvel({ x: 0, y: 0 }, true);
-			body3.setAngvel(0, true);
-			body3.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
-
-			const domX = body3.translation().x;
-			const domY = floorY;
-			body3.setNextKinematicTranslation({ x: domX, y: domY });
-		}
-		// stone2
-		if (body4.translation().y < floorY) {
-			body4.setLinvel({ x: 0, y: 0 }, true);
-			body4.setAngvel(0, true);
-			body4.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
-
-			const domX = body4.translation().x;
-			const domY = floorY;
-			body4.setNextKinematicTranslation({ x: domX, y: domY });
-		}
-		// 停止ここまで
-
-		// 上昇中は少し加速させるここで重力を調整
-		if (body.linvel().y < 0) {
-			body.setGravityScale(1.5, true);
-		} else {
-			body.setGravityScale(1.8, true);
-		}
-		const pos = body.translation();
-		const angle = body.rotation();
-
-		const x = toPixX(pos.x);
-		const y = toPixY(pos.y);
-
-		box.style.transform = `translate(${x - rect.width / 2}px, ${y - rect.height / 2}px) rotate(${-angle}rad)`;
-
-		// box2
-		const pos2 = body2.translation();
-		const angle2 = body2.rotation();
-		const x2 = toPixX(pos2.x);
-		const y2 = toPixY(pos2.y);
-		box2.style.transform = `translate(${x2 - rect2.width / 2}px, ${y2 - rect2.height / 2}px) rotate(${-angle2}rad)`;
-
-		// stone1
-		const pos3 = body3.translation();
-		const angle3 = body3.rotation();
-		const x3 = toPixX(pos3.x);
-		const y3 = toPixY(pos3.y);
-		stone1.style.transform = `translate(${x3 - rect3.width / 2}px, ${y3 - rect3.height / 2}px) rotate(${-angle3}rad)`;
-
-		// stone2
-		const pos4 = body4.translation();
-		const angle4 = body4.rotation();
-		const x4 = toPixX(pos4.x);
-		const y4 = toPixY(pos4.y);
-		stone2.style.transform = `translate(${x4 - rect4.width / 2}px, ${y4 - rect4.height / 2}px) rotate(${-angle4}rad)`;
 
 		requestAnimationFrame(loop);
 	}
