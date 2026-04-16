@@ -50,27 +50,7 @@ img {
 	width: 100%;
 	height: 100%;
 }
-.image2 {
-	position: absolute;
-	z-index: 0;
-	top: calc(10vh + 15vw);
-	left: 13.227vw;
-	width: 33.07vw;
-	height: 22.05vw;
-	/* opacity: 0; */
-}
-.svg-image1 {
-	position: absolute;
-	z-index: 0;
-	top: 19.92vw;
-	left: 13.227vw;
-	width: 18.07vw;
-	height: 16.34vw;
-}
-.svg-image1 svg {
-	width: 100%;
-	height: 100%;
-}
+
 .floor {
 	position: fixed;
 	bottom: 0;
@@ -82,31 +62,31 @@ img {
 }
 #box {
 	position: absolute;
-	width: 120px;
-	height: 120px;
+	width: 8vw;
+	height: 8vw;
 	background: #3498db;
 	transform-origin: center center;
 	will-change: transform;
 }
 #box2 {
 	position: absolute;
-	width: 120px;
-	height: 120px;
+	width: 8vw;
+	height: 8vw;
 	background: #e74c3c;
 	transform-origin: center center;
 	will-change: transform;
 }
 .stone1 {
 	position: absolute;
-	width: 272px;
-	height: 247px;
+	width: 18vw;
+	height: 16vw;
 	transform-origin: center center;
 	will-change: transform;
 }
 .stone2 {
 	position: absolute;
-	width: 272px;
-	height: 247px;
+	width: 18vw;
+	height: 16vw;
 	transform-origin: center center;
 	will-change: transform;
 }

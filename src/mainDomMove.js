@@ -1,7 +1,6 @@
 import RAPIER from "@dimforge/rapier2d-compat";
 const SCALE = 80;
-const worldWidth = window.innerWidth / SCALE;
-const worldHeight = window.innerHeight / SCALE;
+let worldWidth, worldHeight;
 const toPhysX = (x) => (x - window.innerWidth / 2) / SCALE;
 const toPhysY = (y) => -(y - window.innerHeight / 2) / SCALE;
 const toPixX = (x) => x * SCALE + window.innerWidth / 2;
@@ -74,44 +73,39 @@ function clean(pts) {
 	return out;
 }
 
-(async () => {
-	const doms = [document.getElementById("box"), document.getElementById("box2"), document.querySelector(".stone1"), document.querySelector(".stone2")];
+// グローバル変数として保持
+let world, bodies, doms, rects, centers, paths, vbs, vertsArr;
+let floor, floorCollider, leftWall, leftWallCollider, rightWall, rightWallCollider;
 
-	// ===== 物理ワールド =====
-	await RAPIER.init({
-		noDefaultInstance: false,
-		wasmUrl: "/rapier_wasm2d_bg.wasm",
-	});
-	// gravity = 物体がどれだけ速く下に加速するかを決める値
-	const gravity = { x: 0.0, y: -80 };
-	const world = new RAPIER.World(gravity);
-
-	// 物体の減り込みを減らすために、ソルバーの反復回数を増やす
-	world.integrationParameters.numSolverIterations = 8;
-	world.integrationParameters.numAdditionalFrictionIterations = 15;
-	// めりこみ許容量
-	world.integrationParameters.allowedLinearError = 0.0001;
-	// 衝突を減らすために柔らかくする
-	world.integrationParameters.erp = 0.6;
-
-	// ===== 初期位置・形状データ =====
-	const rects = doms.map((dom) => dom.getBoundingClientRect());
-	const centers = rects.map((rect) => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }));
-
-	// stone1, stone2用のパス・頂点データ
-	const paths = [doms[2].querySelector("path"), doms[3].querySelector("path")];
-	const vbs = [doms[2].viewBox.baseVal, doms[3].viewBox.baseVal];
-	const vertsArr = paths.map((path, i) => {
+// 物理ワールド初期化を関数化
+async function initWorld() {
+	// DOM取得
+	doms = [document.getElementById("box"), document.getElementById("box2"), document.querySelector(".stone1"), document.querySelector(".stone2")];
+	rects = doms.map((dom) => dom.getBoundingClientRect());
+	centers = rects.map((rect) => ({
+		x: rect.left + rect.width / 2,
+		y: rect.top + rect.height / 2,
+	}));
+	paths = [doms[2].querySelector("path"), doms[3].querySelector("path")];
+	vbs = [doms[2].viewBox.baseVal, doms[3].viewBox.baseVal];
+	vertsArr = paths.map((path, i) => {
 		const rawVerts = pathToVertices(path, 2, 120);
 		const scaleX = rects[i + 2].width / vbs[i].width;
 		const scaleY = rects[i + 2].height / vbs[i].height;
 		return rawVerts.map(([x, y]) => [((x - vbs[i].x - vbs[i].width / 2) * scaleX) / SCALE, -(((y - vbs[i].y - vbs[i].height / 2) * scaleY) / SCALE)]);
 	});
 
-	// ===== 剛体 =====
+	// 物理ワールド
+	const gravity = { x: 0.0, y: -80 };
+	world = new RAPIER.World(gravity);
+	world.integrationParameters.numSolverIterations = 8;
+	world.integrationParameters.numAdditionalFrictionIterations = 15;
+	world.integrationParameters.allowedLinearError = 0.0001;
+	world.integrationParameters.erp = 0.6;
+
 	const linearDamping = 0.5;
-	const angularDamping = 3;
-	const bodies = [
+	const angularDamping = 1;
+	bodies = [
 		world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(centers[0].x), toPhysY(centers[0].y)).setLinearDamping(linearDamping).setAngularDamping(angularDamping)),
 		world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(centers[1].x), toPhysY(centers[1].y)).setLinearDamping(linearDamping).setAngularDamping(angularDamping)),
 		world.createRigidBody(
@@ -128,11 +122,9 @@ function clean(pts) {
 		),
 	];
 
-	// ===== コライダー =====
-	// box, box2
+	// コライダー
 	world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]).setRestitution(0);
 	world.createCollider(RAPIER.ColliderDesc.cuboid(rects[1].width / 2 / SCALE, rects[1].height / 2 / SCALE), bodies[1]).setRestitution(0);
-	// stone1, stone2
 	for (let i = 0; i < 2; i++) {
 		const cleaned = clean(vertsArr[i]);
 		const flat = cleaned.flat();
@@ -142,25 +134,34 @@ function clean(pts) {
 			world.createCollider(hull, bodies[i + 2]).setRestitution(0.0);
 		}
 	}
-	// ===== 床 =====
-	const floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
-	const floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
+
+	// 床・壁
+	worldWidth = window.innerWidth / SCALE;
+	worldHeight = window.innerHeight / SCALE;
+	const wallThickness = 0.2;
+	floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
+	floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
 	floorCollider.setRestitution(0.0);
 
-	// ===== 左右の壁 =====
-	const wallThickness = 0.2; // 薄い壁
-
-	const leftWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-worldWidth / 2 - wallThickness, 0));
-	const leftWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), leftWall);
+	leftWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-worldWidth / 2 - wallThickness, 0));
+	leftWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), leftWall);
 	leftWallCollider.setRestitution(0.0);
 
-	const rightWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(worldWidth / 2 + wallThickness, 0));
-	const rightWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), rightWall);
+	rightWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(worldWidth / 2 + wallThickness, 0));
+	rightWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), rightWall);
 	rightWallCollider.setRestitution(0.0);
+}
+
+// 初期化
+(async () => {
+	await RAPIER.init({
+		noDefaultInstance: false,
+		wasmUrl: "/rapier_wasm2d_bg.wasm",
+	});
+	await initWorld();
 
 	// ===== ドラッグ =====
 	let drags = [false, false, false, false];
-	// --- マウス ---
 	doms.forEach((dom, i) => {
 		dom.addEventListener("mousedown", (e) => {
 			drags[i] = true;
@@ -168,7 +169,6 @@ function clean(pts) {
 			setGrab(bodies[i], i, e);
 		});
 	});
-	// --- タッチ ---
 	doms.forEach((dom, i) => {
 		dom.addEventListener(
 			"touchstart",
@@ -245,33 +245,29 @@ function clean(pts) {
 		{ passive: false },
 	);
 
+	// ===== リサイズ対応 =====
+	window.addEventListener("resize", async () => {
+		// 物理ワールド再構築
+		await initWorld();
+	});
+
 	// ===== ループ =====
 	function loop() {
 		world.step();
 
 		const minX = toPhysX(0);
 		const maxX = toPhysX(window.innerWidth);
-		const minY = toPhysY(window.innerHeight); // 画面下端
-		// const maxY = toPhysY(0); // 画面上端
+		const minY = toPhysY(window.innerHeight);
 
 		for (let i = 0; i < bodies.length; i++) {
 			const b = bodies[i];
 			const v = b.linvel();
-
-			// 上方向を殺す
 			const vy = v.y > 0 ? 0 : v.y;
-
-			// 横減衰
-			const vx = v.x * 0.5;
-
-			// ★ まとめて1回だけセット
+			const vx = v.x * 0.2;
 			b.setLinvel({ x: vx, y: vy }, true);
-
-			// 回転減衰
 			b.setAngvel(b.angvel() * 0.2, true);
 		}
 
-		// 画面外制限
 		for (let i = 0; i < bodies.length; i++) {
 			let pos = bodies[i].translation();
 			let fixed = false;
@@ -296,7 +292,6 @@ function clean(pts) {
 			}
 		}
 
-		// 描画更新
 		for (let i = 0; i < bodies.length; i++) {
 			const pos = bodies[i].translation();
 			const angle = bodies[i].rotation();
@@ -309,3 +304,4 @@ function clean(pts) {
 	}
 	loop();
 })();
+// ...既存コード...
