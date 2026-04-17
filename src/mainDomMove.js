@@ -170,7 +170,7 @@ async function initWorld() {
 
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
 	// 上に物体が載っていて動かせるかどうかはこの値次第。衝突判定の頻度が上がるため、パフォーマンスにも影響する
-	const characterController = world.createCharacterController(0.001);
+	const characterController = world.createCharacterController(0.01);
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -285,6 +285,7 @@ async function initWorld() {
 	});
 
 	// ===== ループ =====
+
 	function loop() {
 		world.step();
 
@@ -302,30 +303,6 @@ async function initWorld() {
 			b.setLinvel({ x: vx, y: vy }, true);
 			// 回転減衰
 			b.setAngvel(b.angvel() * 0.2, true);
-		}
-
-		for (let i = 0; i < bodies.length; i++) {
-			let pos = bodies[i].translation();
-			let fixed = false;
-			let x = pos.x;
-			let y = pos.y;
-			if (x < minX) {
-				x = minX;
-				fixed = true;
-			}
-			if (x > maxX) {
-				x = maxX;
-				fixed = true;
-			}
-			if (y < minY) {
-				y = minY;
-				fixed = true;
-			}
-			if (fixed) {
-				bodies[i].setLinvel({ x: 0, y: 0 }, true);
-				bodies[i].setAngvel(0, true);
-				bodies[i].setTranslation({ x, y }, true);
-			}
 		}
 
 		for (let i = 0; i < bodies.length; i++) {
