@@ -169,6 +169,7 @@ async function initWorld() {
 	});
 
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
+	// 上に物体が載っていて動かせるかどうかはこの値次第。衝突判定の頻度が上がるため、パフォーマンスにも影響する
 	const characterController = world.createCharacterController(0.001);
 
 	window.addEventListener("mousemove", (e) => {
@@ -206,19 +207,39 @@ async function initWorld() {
 		(e) => {
 			const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 			if (e.touches.length === 0) return;
+
 			const touch = e.touches[0];
+
 			for (let i = 0; i < bodies.length; i++) {
 				if (!drags[i]) continue;
+
 				const w = rects[i].width;
 				const h = rects[i].height;
+
 				const x = clamp(touch.clientX, w / 2, window.innerWidth - w / 2);
 				const y = clamp(touch.clientY, h / 2, window.innerHeight - h / 2);
 
+				// 現在位置
+				const current = bodies[i].translation();
+
+				// 行きたい移動量（delta）
+				const delta = {
+					x: toPhysX(x) + offsets[i].x - current.x,
+					y: toPhysY(y) + offsets[i].y - current.y,
+				};
+
+				// 衝突考慮
+				characterController.computeColliderMovement(colliders[i], delta);
+
+				const corrected = characterController.computedMovement();
+
+				// 安全な移動
 				bodies[i].setNextKinematicTranslation({
-					x: toPhysX(x) + offsets[i].x,
-					y: toPhysY(y) + offsets[i].y,
+					x: current.x + corrected.x,
+					y: current.y + corrected.y,
 				});
 			}
+
 			e.preventDefault();
 		},
 		{ passive: false },
@@ -226,13 +247,11 @@ async function initWorld() {
 
 	function endDrag() {
 		if (!drags.some(Boolean)) return;
-		const MAX_LINVEL = 1;
-		const MAX_ANGVEL = 5;
 		for (let i = 0; i < drags.length; i++) {
 			if (!drags[i]) continue;
 			drags[i] = false;
 			let linvel = bodies[i].linvel();
-			let angvel = Math.max(Math.min(bodies[i].angvel(), MAX_ANGVEL), -MAX_ANGVEL);
+			let angvel = bodies[i].angvel();
 			bodies[i].setLinvel(linvel, true);
 			bodies[i].setAngvel(angvel, true);
 			requestAnimationFrame(() => {
