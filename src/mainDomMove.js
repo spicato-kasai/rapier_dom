@@ -26,16 +26,6 @@ function setGrab(body, index, e) {
 	};
 }
 
-// 物体が飛びすぎないように速度と距離を制限する関数
-function clampMagnitude(vec, max) {
-	const mag = Math.sqrt(vec.x * vec.x + vec.y * vec.y);
-	if (mag > max) {
-		const scale = max / mag;
-		return { x: vec.x * scale, y: vec.y * scale };
-	}
-	return vec;
-}
-
 // SVGパスをサンプリングして頂点配列を生成
 function pathToVertices(pathEl, minStep = 6, maxPoints = 60) {
 	const total = pathEl.getTotalLength();
@@ -144,7 +134,7 @@ async function initWorld() {
 	worldHeight = window.innerHeight / SCALE;
 	const wallThickness = 1;
 	floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
-	floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 1), floor);
+	floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
 	floorCollider.setRestitution(0.0);
 
 	leftWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-worldWidth / 2 - wallThickness, 0));
@@ -223,9 +213,10 @@ async function initWorld() {
 				const h = rects[i].height;
 				const x = clamp(touch.clientX, w / 2, window.innerWidth - w / 2);
 				const y = clamp(touch.clientY, h / 2, window.innerHeight - h / 2);
+
 				bodies[i].setNextKinematicTranslation({
-					x: toPhysX(x),
-					y: toPhysY(y),
+					x: toPhysX(x) + offsets[i].x,
+					y: toPhysY(y) + offsets[i].y,
 				});
 			}
 			e.preventDefault();
@@ -240,7 +231,7 @@ async function initWorld() {
 		for (let i = 0; i < drags.length; i++) {
 			if (!drags[i]) continue;
 			drags[i] = false;
-			let linvel = clampMagnitude(bodies[i].linvel(), MAX_LINVEL);
+			let linvel = bodies[i].linvel();
 			let angvel = Math.max(Math.min(bodies[i].angvel(), MAX_ANGVEL), -MAX_ANGVEL);
 			bodies[i].setLinvel(linvel, true);
 			bodies[i].setAngvel(angvel, true);
