@@ -74,7 +74,7 @@ function clean(pts) {
 }
 
 // グローバル変数として保持
-let world, bodies, doms, rects, centers, paths, vbs, vertsArr;
+let world, bodies, colliders, doms, rects, centers, paths, vbs, vertsArr;
 let floor, floorCollider, leftWall, leftWallCollider, rightWall, rightWallCollider;
 
 // 物理ワールド初期化を関数化
@@ -96,12 +96,12 @@ async function initWorld() {
 	});
 
 	// 物理ワールド
-	const gravity = { x: 0.0, y: -50 };
+	const gravity = { x: 0.0, y: -45 };
 	world = new RAPIER.World(gravity);
-	world.integrationParameters.numSolverIterations = 8;
-	world.integrationParameters.numAdditionalFrictionIterations = 15;
-	world.integrationParameters.allowedLinearError = 0.0001;
-	world.integrationParameters.erp = 0.6;
+	world.integrationParameters.numSolverIterations = 20;
+	world.integrationParameters.contact_natural_frequency = 100;
+	world.integrationParameters.normalizedAllowedLinearError = 0.000001;
+	// world.integrationParameters.normalizedPredictionDistance = 0.1;
 
 	const linearDamping = 0.5;
 	const angularDamping = 1;
@@ -123,24 +123,39 @@ async function initWorld() {
 	];
 
 	// コライダー
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]).setRestitution(0);
-	world.createCollider(RAPIER.ColliderDesc.cuboid(rects[1].width / 2 / SCALE, rects[1].height / 2 / SCALE), bodies[1]).setRestitution(0);
+	// world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]).setRestitution(0);
+	// world.createCollider(RAPIER.ColliderDesc.cuboid(rects[1].width / 2 / SCALE, rects[1].height / 2 / SCALE), bodies[1]).setRestitution(0);
+	// for (let i = 0; i < 2; i++) {
+	// 	const cleaned = clean(vertsArr[i]);
+	// 	const flat = cleaned.flat();
+	// 	const hull = RAPIER.ColliderDesc.convexHull(new Float32Array(flat));
+	// 	if (hull) {
+	// 		hull.setDensity(3);
+	// 		world.createCollider(hull, bodies[i + 2]).setRestitution(0.0);
+	// 	}
+	// }
+	colliders = [];
+	colliders[0] = world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]);
+	colliders[0].setRestitution(0);
+	colliders[1] = world.createCollider(RAPIER.ColliderDesc.cuboid(rects[1].width / 2 / SCALE, rects[1].height / 2 / SCALE), bodies[1]);
+	colliders[1].setRestitution(0);
 	for (let i = 0; i < 2; i++) {
 		const cleaned = clean(vertsArr[i]);
 		const flat = cleaned.flat();
 		const hull = RAPIER.ColliderDesc.convexHull(new Float32Array(flat));
 		if (hull) {
 			hull.setDensity(3);
-			world.createCollider(hull, bodies[i + 2]).setRestitution(0.0);
+			colliders[i + 2] = world.createCollider(hull, bodies[i + 2]);
+			colliders[i + 2].setRestitution(0.0);
 		}
 	}
 
 	// 床・壁
 	worldWidth = window.innerWidth / SCALE;
 	worldHeight = window.innerHeight / SCALE;
-	const wallThickness = 0.2;
+	const wallThickness = 1;
 	floor = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(0, -worldHeight / 2));
-	floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 0.2), floor);
+	floorCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(worldWidth, 1), floor);
 	floorCollider.setRestitution(0.0);
 
 	leftWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(-worldWidth / 2 - wallThickness, 0));
@@ -154,10 +169,7 @@ async function initWorld() {
 
 // 初期化
 (async () => {
-	await RAPIER.init({
-		noDefaultInstance: false,
-		wasmUrl: "/rapier_wasm2d_bg.wasm",
-	});
+	await RAPIER.init({});
 	await initWorld();
 
 	// ===== ドラッグ =====
@@ -170,16 +182,31 @@ async function initWorld() {
 		});
 	});
 	doms.forEach((dom, i) => {
-		dom.addEventListener(
-			"touchstart",
-			(e) => {
-				drags[i] = true;
-				bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
-				e.preventDefault();
-			},
-			{ passive: false },
-		);
+		dom.addEventListener("touchstart", (e) => {
+			drags[i] = true;
+			bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			e.preventDefault();
+		});
 	});
+
+	// window.addEventListener("mousemove", (e) => {
+	// 	const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+	// 	for (let i = 0; i < bodies.length; i++) {
+	// 		if (!drags[i]) continue;
+	// 		const w = rects[i].width;
+	// 		const h = rects[i].height;
+	// 		const x = clamp(e.clientX, w / 2, window.innerWidth - w / 2);
+	// 		const y = clamp(e.clientY, h / 2, window.innerHeight - h / 2);
+	// 		// 		// キネマティック：自分では動かず、コードで位置を直接制御する物体
+	// 		bodies[i].setNextKinematicTranslation({
+	// 			x: toPhysX(x) + offsets[i].x,
+	// 			y: toPhysY(y) + offsets[i].y,
+	// 		});
+	// 	}
+	// });
+
+	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
+	const characterController = world.createCharacterController(0.001);
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -189,9 +216,24 @@ async function initWorld() {
 			const h = rects[i].height;
 			const x = clamp(e.clientX, w / 2, window.innerWidth - w / 2);
 			const y = clamp(e.clientY, h / 2, window.innerHeight - h / 2);
+
+			// 現在位置を取得
+			const current = bodies[i].translation();
+
+			// 「行きたい移動量（delta）」を作る
+			const delta = {
+				x: toPhysX(x) + offsets[i].x - current.x,
+				y: toPhysY(y) + offsets[i].y - current.y,
+			};
+
+			// deltaは壁などを無視した移動
+			characterController.computeColliderMovement(colliders[i], delta);
+			// 衝突を考慮した安全な移動
+			const corrected = characterController.computedMovement();
+			// 実際に移動する
 			bodies[i].setNextKinematicTranslation({
-				x: toPhysX(x) + offsets[i].x,
-				y: toPhysY(y) + offsets[i].y,
+				x: current.x + corrected.x,
+				y: current.y + corrected.y,
 			});
 		}
 	});
@@ -230,6 +272,7 @@ async function initWorld() {
 			bodies[i].setLinvel(linvel, true);
 			bodies[i].setAngvel(angvel, true);
 			requestAnimationFrame(() => {
+				// 重力・力・衝突の影響を受けて自然に動くように、ドラッグ終了後にダイナミックに切り替える
 				bodies[i].setBodyType(RAPIER.RigidBodyType.Dynamic);
 			});
 		}
@@ -269,9 +312,12 @@ async function initWorld() {
 		for (let i = 0; i < bodies.length; i++) {
 			const b = bodies[i];
 			const v = b.linvel();
+			// 上方向移動距離調整
 			const vy = v.y > 0 ? v.y * 0.1 : v.y;
+			// 横方向移動距離調整
 			const vx = v.x * 0.2;
 			b.setLinvel({ x: vx, y: vy }, true);
+			// 回転減衰
 			b.setAngvel(b.angvel() * 0.2, true);
 		}
 
@@ -311,4 +357,3 @@ async function initWorld() {
 	}
 	loop();
 })();
-// ...既存コード...
