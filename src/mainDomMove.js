@@ -123,17 +123,6 @@ async function initWorld() {
 	];
 
 	// コライダー
-	// world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]).setRestitution(0);
-	// world.createCollider(RAPIER.ColliderDesc.cuboid(rects[1].width / 2 / SCALE, rects[1].height / 2 / SCALE), bodies[1]).setRestitution(0);
-	// for (let i = 0; i < 2; i++) {
-	// 	const cleaned = clean(vertsArr[i]);
-	// 	const flat = cleaned.flat();
-	// 	const hull = RAPIER.ColliderDesc.convexHull(new Float32Array(flat));
-	// 	if (hull) {
-	// 		hull.setDensity(3);
-	// 		world.createCollider(hull, bodies[i + 2]).setRestitution(0.0);
-	// 	}
-	// }
 	colliders = [];
 	colliders[0] = world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]);
 	colliders[0].setRestitution(0);
@@ -188,22 +177,6 @@ async function initWorld() {
 			e.preventDefault();
 		});
 	});
-
-	// window.addEventListener("mousemove", (e) => {
-	// 	const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-	// 	for (let i = 0; i < bodies.length; i++) {
-	// 		if (!drags[i]) continue;
-	// 		const w = rects[i].width;
-	// 		const h = rects[i].height;
-	// 		const x = clamp(e.clientX, w / 2, window.innerWidth - w / 2);
-	// 		const y = clamp(e.clientY, h / 2, window.innerHeight - h / 2);
-	// 		// 		// キネマティック：自分では動かず、コードで位置を直接制御する物体
-	// 		bodies[i].setNextKinematicTranslation({
-	// 			x: toPhysX(x) + offsets[i].x,
-	// 			y: toPhysY(y) + offsets[i].y,
-	// 		});
-	// 	}
-	// });
 
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
 	const characterController = world.createCharacterController(0.001);
@@ -315,7 +288,7 @@ async function initWorld() {
 			// 上方向移動距離調整
 			const vy = v.y > 0 ? v.y * 0.1 : v.y;
 			// 横方向移動距離調整
-			const vx = v.x * 0.2;
+			const vx = v.x * 0.5;
 			b.setLinvel({ x: vx, y: vy }, true);
 			// 回転減衰
 			b.setAngvel(b.angvel() * 0.2, true);
