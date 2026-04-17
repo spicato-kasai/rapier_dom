@@ -91,7 +91,7 @@ async function initWorld() {
 	world.integrationParameters.numSolverIterations = 20;
 	world.integrationParameters.contact_natural_frequency = 100;
 	world.integrationParameters.normalizedAllowedLinearError = 0.000001;
-	// world.integrationParameters.normalizedPredictionDistance = 0.1;
+	world.integrationParameters.normalizedPredictionDistance = 0.1;
 
 	const linearDamping = 0.5;
 	const angularDamping = 1;
