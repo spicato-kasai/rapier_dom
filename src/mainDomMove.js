@@ -288,7 +288,7 @@ async function initWorld() {
 			// 上方向移動距離調整
 			const vy = v.y > 0 ? v.y * 0.1 : v.y;
 			// 横方向移動距離調整
-			const vx = v.x * 0.5;
+			const vx = v.x * 0.7;
 			b.setLinvel({ x: vx, y: vy }, true);
 			// 回転減衰
 			b.setAngvel(b.angvel() * 0.2, true);
