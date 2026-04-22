@@ -30,7 +30,7 @@ img {
 	top: 20vw;
 	left: 20vw;
 	width: 52vw;
-	height: 33vw;
+	height: 23vw;
 	border: 1px solid #000;
 	z-index: 10;
 	pointer-events: none;
@@ -60,7 +60,11 @@ img {
 	background: black;
 }
 #box {
+	--x: 10vw;
+	--y: 8vw;
 	position: absolute;
+	top: 0;
+	left: 0;
 	width: 8vw;
 	height: 8vw;
 	background: #3498db;
@@ -68,7 +72,11 @@ img {
 	will-change: transform;
 }
 #box2 {
+	--x: 80vw;
+	--y: 10vw;
 	position: absolute;
+	top: 0;
+	left: 0;
 	width: 8vw;
 	height: 8vw;
 	background: #e74c3c;
@@ -76,13 +84,21 @@ img {
 	will-change: transform;
 }
 .stone1 {
+	--x: 60vw;
+	--y: 10vw;
 	position: absolute;
+	top: 0;
+	left: 0;
 	width: 18vw;
 	height: 16vw;
 	transform-origin: center center;
 	will-change: transform;
 }
 .stone2 {
+	--x: 1vw;
+	--y: 20vw;
+	top: 0;
+	left: 0;
 	position: absolute;
 	width: 18vw;
 	height: 16vw;

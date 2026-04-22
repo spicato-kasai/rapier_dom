@@ -63,6 +63,32 @@ function clean(pts) {
 	return out;
 }
 
+// 初期値設定
+function getCSSPosPx(dom) {
+	const style = getComputedStyle(dom);
+
+	const rawX = style.getPropertyValue("--x").trim();
+	const rawY = style.getPropertyValue("--y").trim();
+
+	return {
+		x: cssValueToPx(rawX, "x"),
+		y: cssValueToPx(rawY, "y"),
+	};
+}
+// vwとvhをpxに変換
+function cssValueToPx(value, axis = "x") {
+	if (value.includes("vw")) {
+		return (parseFloat(value) / 100) * window.innerWidth;
+	}
+	if (value.includes("vh")) {
+		return (parseFloat(value) / 100) * window.innerHeight;
+	}
+	if (value.includes("px")) {
+		return parseFloat(value);
+	}
+	return parseFloat(value); // fallback
+}
+
 // 箱の外は重力をなくすための関数
 function getCalRect() {
 	return document.querySelector(".calender").getBoundingClientRect();
@@ -131,6 +157,14 @@ async function initWorld() {
 		),
 	];
 
+	// 初期位置設定
+
+	bodies = doms.map((dom, i) => {
+		const pos = getCSSPosPx(dom);
+
+		return world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(pos.x), toPhysY(pos.y)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
+	});
+
 	// コライダー
 	colliders = [];
 	colliders[0] = world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]);
@@ -186,6 +220,15 @@ async function initWorld() {
 	const calFloor = createWallFromDom(floorDom);
 	const calLeft = createWallFromDom(leftDom);
 	const calRight = createWallFromDom(rightDom);
+
+	// DOMの位置セット
+	for (let i = 0; i < bodies.length; i++) {
+		const pos = bodies[i].translation();
+		const x = toPixX(pos.x);
+		const y = toPixY(pos.y);
+
+		doms[i].style.transform = `translate(${x - rects[i].width / 2}px, ${y - rects[i].height / 2}px)`;
+	}
 }
 
 // 初期化
@@ -197,8 +240,8 @@ async function initWorld() {
 	updateOffsets();
 
 	// 箱の判定ようのマージン
-	const enterMargin = 0;
-	const exitMargin = 20;
+	const enterMargin = 50;
+	const exitMargin = 50;
 	const insideStates = [false, false, false, false];
 
 	// ===== ドラッグ =====
