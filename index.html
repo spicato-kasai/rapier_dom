@@ -8,27 +8,29 @@
 	</head>
 	<body>
 		<main class="layout">
-			<div id="box"></div>
-			<div id="box2"></div>
-
-			<svg class="stone1" width="272" height="247" fill="none" viewBox="0 0 272 247">
-				<defs>
-					<clipPath id="stone1Clip">
-						<path d="M25 65 1 104l41 73 33 37 91 32 61-32 44-58-44-91L121 1 75 44z" />
-					</clipPath>
-				</defs>
-
-				<image href="/src/calender_image.jpg" x="0" y="0" width="272" height="247" preserveAspectRatio="xMidYMid slice" clip-path="url(#stone1Clip)" />
-			</svg>
-			<svg class="stone2" width="272" height="247" fill="none" viewBox="0 0 272 247"><path fill="#ff0000" stroke="#ff0000" d="M25 65 1 104l41 73 33 37 91 32 61-32 44-58-44-91L121 1 75 44z" /></svg>
-			<div class="calender">
-				<div class="side-left"></div>
-				<div class="side-right"></div>
-				<div class="floor"></div>
+			<div id="capture-area" class="lMain">
+				<div id="box"></div>
+				<div id="box2"></div>
+				<svg class="stone1" width="272" height="247" viewBox="0 0 272 247">
+					<defs>
+						<clipPath id="stone1Clip" clipPathUnits="objectBoundingBox">
+							<path transform="scale(0.003676, 0.004049)" d="M25 65 1 104l41 73 33 37 91 32 61-32 44-58-44-91L121 1 75 44z" />
+						</clipPath>
+					</defs>
+					<path d="M25 65 1 104l41 73 33 37 91 32 61-32 44-58-44-91L121 1 75 44z" fill="none" />
+				</svg>
+				<svg class="stone2" width="272" height="247" fill="none" viewBox="0 0 272 247"><path fill="#ff0000" stroke="#ff0000" d="M25 65 1 104l41 73 33 37 91 32 61-32 44-58-44-91L121 1 75 44z" /></svg>
+				<div class="calender">
+					<div class="side-left"></div>
+					<div class="side-right"></div>
+					<div class="floor"></div>
+				</div>
+				<div class="clear">クリア！！！</div>
 			</div>
 
-			<div class="clear">クリア！！！</div>
+			<button class="capture-button js-capture">画面キャプチャ</button>
 		</main>
 		<script type="module" src="/src/mainDomMove.js"></script>
+		<script type="module" src="/src/capture.js"></script>
 	</body>
 </html>
