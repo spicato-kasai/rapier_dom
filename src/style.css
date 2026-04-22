@@ -25,15 +25,39 @@ img {
 	width: 100%;
 	height: 100%;
 }
-
-.floor {
+.calender {
 	position: fixed;
+	top: 20vw;
+	left: 20vw;
+	width: 52vw;
+	height: 33vw;
+	border: 1px solid #000;
+	z-index: 10;
+	pointer-events: none;
+}
+.side-left {
+	width: 1.3vw;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background: black;
+}
+.side-right {
+	width: 1.3vw;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	right: 0;
+	background: black;
+}
+.floor {
+	position: absolute;
 	bottom: 0;
 	left: 0;
 	width: 100%;
-	height: 20px;
+	height: 1.3vw;
 	background: black;
-	z-index: 10;
 }
 #box {
 	position: absolute;
@@ -64,4 +88,16 @@ img {
 	height: 16vw;
 	transform-origin: center center;
 	will-change: transform;
+}
+.clear {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 2rem;
+	color: #000;
+	opacity: 0;
+	&.is-cleared {
+		opacity: 1;
+	}
 }

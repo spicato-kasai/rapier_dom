@@ -63,9 +63,28 @@ function clean(pts) {
 	return out;
 }
 
+// 箱の外は重力をなくすための関数
+function getCalRect() {
+	return document.querySelector(".calender").getBoundingClientRect();
+}
+
 // グローバル変数として保持
 let world, bodies, colliders, doms, rects, centers, paths, vbs, vertsArr;
 let floor, floorCollider, leftWall, leftWallCollider, rightWall, rightWallCollider;
+let innerOffsetLeft = 0;
+let innerOffsetRight = 0;
+
+// クリア要素取得
+const clearEl = document.querySelector(".clear");
+
+// 箱のサイズが変わる可能性があるため、常に最新のサイズを取得する関数
+function updateOffsets() {
+	const leftDom = document.querySelector(".side-left");
+	const rightDom = document.querySelector(".side-right");
+
+	innerOffsetLeft = leftDom.getBoundingClientRect().width;
+	innerOffsetRight = rightDom.getBoundingClientRect().width;
+}
 
 // 物理ワールド初期化を関数化
 async function initWorld() {
@@ -144,12 +163,43 @@ async function initWorld() {
 	rightWall = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(worldWidth / 2 + wallThickness, 0));
 	rightWallCollider = world.createCollider(RAPIER.ColliderDesc.cuboid(wallThickness, worldHeight), rightWall);
 	rightWallCollider.setRestitution(0.0);
+
+	// 石を入れる箱（カレンダーに該当する）
+	function createWallFromDom(el) {
+		const rect = el.getBoundingClientRect();
+
+		const centerX = rect.left + rect.width / 2;
+		const centerY = rect.top + rect.height / 2;
+
+		const body = world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(toPhysX(centerX), toPhysY(centerY)));
+
+		const collider = world.createCollider(RAPIER.ColliderDesc.cuboid(rect.width / 2 / SCALE, rect.height / 2 / SCALE), body);
+
+		collider.setRestitution(0.0);
+
+		return { body, collider };
+	}
+	const floorDom = document.querySelector(".floor");
+	const leftDom = document.querySelector(".side-left");
+	const rightDom = document.querySelector(".side-right");
+
+	const calFloor = createWallFromDom(floorDom);
+	const calLeft = createWallFromDom(leftDom);
+	const calRight = createWallFromDom(rightDom);
 }
 
 // 初期化
 (async () => {
 	await RAPIER.init({});
 	await initWorld();
+
+	// 箱のサイズ取得
+	updateOffsets();
+
+	// 箱の判定ようのマージン
+	const enterMargin = 0;
+	const exitMargin = 20;
+	const insideStates = [false, false, false, false];
 
 	// ===== ドラッグ =====
 	let drags = [false, false, false, false];
@@ -275,6 +325,7 @@ async function initWorld() {
 	let resizeTimer;
 	window.addEventListener("resize", () => {
 		clearTimeout(resizeTimer);
+		updateOffsets();
 		resizeTimer = setTimeout(() => {
 			if (!window.matchMedia("(pointer: coarse)").matches) {
 				location.reload();
@@ -289,11 +340,69 @@ async function initWorld() {
 	function loop() {
 		world.step();
 
-		const minX = toPhysX(0);
-		const maxX = toPhysX(window.innerWidth);
-		const minY = toPhysY(window.innerHeight);
+		// 箱の外は重力をなくす
+		const rect = getCalRect();
+
+		const innerRect = {
+			left: rect.left + innerOffsetLeft,
+			right: rect.right - innerOffsetRight,
+			top: rect.top,
+			bottom: rect.bottom,
+		};
+		let allInside = true;
+		for (let i = 0; i < bodies.length; i++) {
+			const b = bodies[i];
+
+			const pos = b.translation();
+			const x = toPixX(pos.x);
+			const y = toPixY(pos.y);
+
+			const domRect = {
+				left: x - rects[i].width / 2,
+				right: x + rects[i].width / 2,
+				top: y - rects[i].height / 2,
+				bottom: y + rects[i].height / 2,
+			};
+			// 完全に内側かチェック（ここ重要）
+			const fullyInside = domRect.left >= innerRect.left && domRect.right <= innerRect.right && domRect.top >= innerRect.top && domRect.bottom <= innerRect.bottom;
+
+			if (!fullyInside) {
+				allInside = false;
+			}
+
+			// 入る判定（タイト）
+			const enter = domRect.right > innerRect.left + enterMargin && domRect.left < innerRect.right - enterMargin && domRect.bottom > innerRect.top + enterMargin && domRect.top < innerRect.bottom - enterMargin;
+
+			// 出る判定（広め）
+			const exit = domRect.right < innerRect.left - exitMargin || domRect.left > innerRect.right + exitMargin || domRect.bottom < innerRect.top - exitMargin || domRect.top > innerRect.bottom + exitMargin;
+
+			if (drags[i]) continue;
+
+			// 状態更新
+			if (!insideStates[i] && enter) {
+				insideStates[i] = true;
+			}
+			if (insideStates[i] && exit) {
+				insideStates[i] = false;
+			}
+
+			// 状態に応じて制御
+			if (insideStates[i]) {
+				if (b.bodyType() !== RAPIER.RigidBodyType.Dynamic) {
+					b.setBodyType(RAPIER.RigidBodyType.Dynamic);
+				}
+			} else {
+				if (b.bodyType() !== RAPIER.RigidBodyType.KinematicPositionBased) {
+					b.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+				}
+				b.setLinvel({ x: 0, y: 0 }, true);
+				b.setAngvel(0, true);
+			}
+		}
+		// ここまで
 
 		for (let i = 0; i < bodies.length; i++) {
+			if (!insideStates[i]) continue;
 			const b = bodies[i];
 			const v = b.linvel();
 			// 上方向移動距離調整
@@ -311,6 +420,13 @@ async function initWorld() {
 			const x = toPixX(pos.x);
 			const y = toPixY(pos.y);
 			doms[i].style.transform = `translate(${x - rects[i].width / 2}px, ${y - rects[i].height / 2}px) rotate(${-angle}rad)`;
+		}
+
+		// クリア判定
+		if (allInside) {
+			clearEl.classList.add("is-cleared");
+		} else {
+			clearEl.classList.remove("is-cleared");
 		}
 
 		requestAnimationFrame(loop);
