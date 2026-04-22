@@ -170,7 +170,7 @@ async function initWorld() {
 
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
 	// 上に物体が載っていて動かせるかどうかはこの値次第。衝突判定の頻度が上がるため、パフォーマンスにも影響する
-	const characterController = world.createCharacterController(0.01);
+	const characterController = world.createCharacterController(0.001);
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
