@@ -39,7 +39,7 @@ img {
 	width: 52vw;
 	height: 23vw;
 	border: 1px solid #000;
-	z-index: 10;
+	z-index: 1;
 	pointer-events: none;
 }
 .side-left {
@@ -77,6 +77,7 @@ img {
 	background: #3498db;
 	transform-origin: center center;
 	will-change: transform;
+	z-index: 10;
 }
 #box2 {
 	--x: 80vw;
@@ -89,6 +90,7 @@ img {
 	background: #e74c3c;
 	transform-origin: center center;
 	will-change: transform;
+	z-index: 10;
 }
 .stone1 {
 	--x: 60vw;
@@ -104,6 +106,7 @@ img {
 	background-size: cover;
 	background-position: center;
 	clip-path: url(#stone1Clip);
+	z-index: 10;
 }
 .stone2 {
 	--x: 1vw;
@@ -115,6 +118,7 @@ img {
 	height: 16vw;
 	transform-origin: center center;
 	will-change: transform;
+	z-index: 10;
 }
 .clear {
 	position: fixed;

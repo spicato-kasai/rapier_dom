@@ -250,6 +250,7 @@ async function initWorld() {
 		dom.addEventListener("mousedown", (e) => {
 			drags[i] = true;
 			bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			colliders[i].setSensor(!mouseInBox);
 			setGrab(bodies[i], i, e);
 		});
 	});
@@ -257,6 +258,7 @@ async function initWorld() {
 		dom.addEventListener("touchstart", (e) => {
 			drags[i] = true;
 			bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			colliders[i].setSensor(!mouseInBox);
 			e.preventDefault();
 		});
 	});
@@ -264,6 +266,28 @@ async function initWorld() {
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
 	// 上に物体が載っていて動かせるかどうかはこの値次第。衝突判定の頻度が上がるため、パフォーマンスにも影響する
 	const characterController = world.createCharacterController(0.001);
+
+	// 箱の外か中か判定する処理
+	let mouseInBox = false;
+	window.addEventListener("mousemove", (e) => {
+		const calRect = getCalRect();
+		const innerRect = {
+			left: calRect.left + innerOffsetLeft,
+			right: calRect.right - innerOffsetRight,
+			top: calRect.top,
+			bottom: calRect.bottom,
+		};
+		const nowInBox = e.clientX > innerRect.left && e.clientX < innerRect.right && e.clientY > innerRect.top && e.clientY < innerRect.bottom;
+		if (nowInBox !== mouseInBox) {
+			mouseInBox = nowInBox;
+			for (let i = 0; i < colliders.length; i++) {
+				if (colliders[i] && !drags[i]) {
+					// ← ドラッグ中はスキップ
+					colliders[i].setSensor(!nowInBox);
+				}
+			}
+		}
+	});
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -283,15 +307,19 @@ async function initWorld() {
 				y: toPhysY(y) + offsets[i].y - current.y,
 			};
 
-			// deltaは壁などを無視した移動
-			characterController.computeColliderMovement(colliders[i], delta);
-			// 衝突を考慮した安全な移動
-			const corrected = characterController.computedMovement();
-			// 実際に移動する
-			bodies[i].setNextKinematicTranslation({
-				x: current.x + corrected.x,
-				y: current.y + corrected.y,
-			});
+			if (mouseInBox) {
+				characterController.computeColliderMovement(colliders[i], delta);
+				const corrected = characterController.computedMovement();
+				bodies[i].setNextKinematicTranslation({
+					x: current.x + corrected.x,
+					y: current.y + corrected.y,
+				});
+			} else {
+				bodies[i].setNextKinematicTranslation({
+					x: current.x + delta.x,
+					y: current.y + delta.y,
+				});
+			}
 		}
 	});
 
@@ -348,8 +376,10 @@ async function initWorld() {
 			bodies[i].setLinvel(linvel, true);
 			bodies[i].setAngvel(angvel, true);
 			requestAnimationFrame(() => {
-				// 重力・力・衝突の影響を受けて自然に動くように、ドラッグ終了後にダイナミックに切り替える
-				bodies[i].setBodyType(RAPIER.RigidBodyType.Dynamic);
+				if (insideStates[i]) {
+					bodies[i].setBodyType(RAPIER.RigidBodyType.Dynamic);
+					colliders[i].setSensor(false);
+				}
 			});
 		}
 	}
@@ -434,10 +464,12 @@ async function initWorld() {
 				if (b.bodyType() !== RAPIER.RigidBodyType.Dynamic) {
 					b.setBodyType(RAPIER.RigidBodyType.Dynamic);
 				}
+				colliders[i].setSensor(false);
 			} else {
 				if (b.bodyType() !== RAPIER.RigidBodyType.KinematicPositionBased) {
 					b.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
 				}
+				colliders[i].setSensor(true);
 				b.setLinvel({ x: 0, y: 0 }, true);
 				b.setAngvel(0, true);
 			}
