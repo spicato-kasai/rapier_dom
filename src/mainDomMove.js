@@ -476,3 +476,7 @@ async function initWorld() {
 	}
 	loop();
 })();
+
+document.querySelector(".js-reset").addEventListener("click", () => {
+	location.reload();
+});
