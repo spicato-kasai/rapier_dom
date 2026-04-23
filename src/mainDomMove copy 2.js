@@ -63,6 +63,32 @@ function clean(pts) {
 	return out;
 }
 
+// 初期値設定
+function getCSSPosPx(dom) {
+	const style = getComputedStyle(dom);
+
+	const rawX = style.getPropertyValue("--x").trim();
+	const rawY = style.getPropertyValue("--y").trim();
+
+	return {
+		x: cssValueToPx(rawX, "x"),
+		y: cssValueToPx(rawY, "y"),
+	};
+}
+// vwとvhをpxに変換
+function cssValueToPx(value, axis = "x") {
+	if (value.includes("vw")) {
+		return (parseFloat(value) / 100) * window.innerWidth;
+	}
+	if (value.includes("vh")) {
+		return (parseFloat(value) / 100) * window.innerHeight;
+	}
+	if (value.includes("px")) {
+		return parseFloat(value);
+	}
+	return parseFloat(value); // fallback
+}
+
 // 箱の外は重力をなくすための関数
 function getCalRect() {
 	return document.querySelector(".calender").getBoundingClientRect();
@@ -131,6 +157,14 @@ async function initWorld() {
 		),
 	];
 
+	// 初期位置設定
+
+	bodies = doms.map((dom, i) => {
+		const pos = getCSSPosPx(dom);
+
+		return world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(toPhysX(pos.x), toPhysY(pos.y)).setLinearDamping(linearDamping).setAngularDamping(angularDamping));
+	});
+
 	// コライダー
 	colliders = [];
 	colliders[0] = world.createCollider(RAPIER.ColliderDesc.cuboid(rects[0].width / 2 / SCALE, rects[0].height / 2 / SCALE), bodies[0]);
@@ -186,6 +220,15 @@ async function initWorld() {
 	const calFloor = createWallFromDom(floorDom);
 	const calLeft = createWallFromDom(leftDom);
 	const calRight = createWallFromDom(rightDom);
+
+	// DOMの位置セット
+	for (let i = 0; i < bodies.length; i++) {
+		const pos = bodies[i].translation();
+		const x = toPixX(pos.x);
+		const y = toPixY(pos.y);
+
+		doms[i].style.transform = `translate(${x - rects[i].width / 2}px, ${y - rects[i].height / 2}px)`;
+	}
 }
 
 // 初期化
@@ -197,8 +240,8 @@ async function initWorld() {
 	updateOffsets();
 
 	// 箱の判定ようのマージン
-	const enterMargin = 0;
-	const exitMargin = 20;
+	const enterMargin = 50;
+	const exitMargin = 50;
 	const insideStates = [false, false, false, false];
 
 	// ===== ドラッグ =====
@@ -207,6 +250,7 @@ async function initWorld() {
 		dom.addEventListener("mousedown", (e) => {
 			drags[i] = true;
 			bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			colliders[i].setSensor(!mouseInBox);
 			setGrab(bodies[i], i, e);
 		});
 	});
@@ -214,6 +258,7 @@ async function initWorld() {
 		dom.addEventListener("touchstart", (e) => {
 			drags[i] = true;
 			bodies[i].setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
+			colliders[i].setSensor(!mouseInBox);
 			e.preventDefault();
 		});
 	});
@@ -221,6 +266,28 @@ async function initWorld() {
 	// 0.01は減り込み具合の調整値。小さいほど減り込みが少なくなり、ドラッグの追従が良くなるが、数値が小さすぎると物体が引っかかりやすくなる
 	// 上に物体が載っていて動かせるかどうかはこの値次第。衝突判定の頻度が上がるため、パフォーマンスにも影響する
 	const characterController = world.createCharacterController(0.001);
+
+	// 箱の外か中か判定する処理
+	let mouseInBox = false;
+	window.addEventListener("mousemove", (e) => {
+		const calRect = getCalRect();
+		const innerRect = {
+			left: calRect.left + innerOffsetLeft,
+			right: calRect.right - innerOffsetRight,
+			top: calRect.top,
+			bottom: calRect.bottom,
+		};
+		const nowInBox = e.clientX > innerRect.left && e.clientX < innerRect.right && e.clientY > innerRect.top && e.clientY < innerRect.bottom;
+		if (nowInBox !== mouseInBox) {
+			mouseInBox = nowInBox;
+			for (let i = 0; i < colliders.length; i++) {
+				if (colliders[i] && !drags[i]) {
+					// ← ドラッグ中はスキップ
+					colliders[i].setSensor(!nowInBox);
+				}
+			}
+		}
+	});
 
 	window.addEventListener("mousemove", (e) => {
 		const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
@@ -240,15 +307,19 @@ async function initWorld() {
 				y: toPhysY(y) + offsets[i].y - current.y,
 			};
 
-			// deltaは壁などを無視した移動
-			characterController.computeColliderMovement(colliders[i], delta);
-			// 衝突を考慮した安全な移動
-			const corrected = characterController.computedMovement();
-			// 実際に移動する
-			bodies[i].setNextKinematicTranslation({
-				x: current.x + corrected.x,
-				y: current.y + corrected.y,
-			});
+			if (mouseInBox) {
+				characterController.computeColliderMovement(colliders[i], delta);
+				const corrected = characterController.computedMovement();
+				bodies[i].setNextKinematicTranslation({
+					x: current.x + corrected.x,
+					y: current.y + corrected.y,
+				});
+			} else {
+				bodies[i].setNextKinematicTranslation({
+					x: current.x + delta.x,
+					y: current.y + delta.y,
+				});
+			}
 		}
 	});
 
@@ -305,8 +376,10 @@ async function initWorld() {
 			bodies[i].setLinvel(linvel, true);
 			bodies[i].setAngvel(angvel, true);
 			requestAnimationFrame(() => {
-				// 重力・力・衝突の影響を受けて自然に動くように、ドラッグ終了後にダイナミックに切り替える
-				bodies[i].setBodyType(RAPIER.RigidBodyType.Dynamic);
+				if (insideStates[i]) {
+					bodies[i].setBodyType(RAPIER.RigidBodyType.Dynamic);
+					colliders[i].setSensor(false);
+				}
 			});
 		}
 	}
@@ -391,10 +464,12 @@ async function initWorld() {
 				if (b.bodyType() !== RAPIER.RigidBodyType.Dynamic) {
 					b.setBodyType(RAPIER.RigidBodyType.Dynamic);
 				}
+				colliders[i].setSensor(false);
 			} else {
 				if (b.bodyType() !== RAPIER.RigidBodyType.KinematicPositionBased) {
 					b.setBodyType(RAPIER.RigidBodyType.KinematicPositionBased);
 				}
+				colliders[i].setSensor(true);
 				b.setLinvel({ x: 0, y: 0 }, true);
 				b.setAngvel(0, true);
 			}
@@ -433,3 +508,7 @@ async function initWorld() {
 	}
 	loop();
 })();
+
+document.querySelector(".js-reset").addEventListener("click", () => {
+	location.reload();
+});
